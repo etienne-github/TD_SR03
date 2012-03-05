@@ -1,0 +1,17 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">
+
+<script language="JavaScript" src="/webvpn/mangle.js"></script>
+<html><head>
+<title>404 Not Found</title>
+</head><body>
+<h1>Not Found</h1>
+<p>The requested URL /~sr03/td_2012/siteuvsr.css was not found on this server.</p>
+<hr>
+<address>Apache/2.2.17 (Fedora) Server at tuxa.sme.utc Port 80</address>
+<script language="JavaScript">
+if (window.onload) webvpn_onload_handler = window.onload
+window.onload=webvpn_show_body_toolbar
+</script>
+<div id=webvpnicons style="position:absolute; top:0px; left:0px; z-index:5000; visibility:hidden"><nobr><img onClick="webvpn_moveit()" alt="Move to other side" title="Move to other side"border=0 src="/img/move24.gif"><a href="javascript:webvpn_go()"><img alt="Go to Address Page" title="Go to Address" border=0 src="/img/go24.gif"></a><img onclick="webvpn_open_toolbar()" alt="Show Toolbar" title="Show Toolbar" border=0 src="/img/toolbar24.gif"><a href="/webvpn/index.html"><img alt="Home Page" title="Home Page" border=0 src="/img/home24.gif"></a><a href="javascript:webvpn_logout()"><img alt="Logout" title="Logout" border=0 src="/img/logout24.gif"></a></nobr></div>
+<script language="JavaScript">webvpn_frame(24*5)</script><iframe name="webvpn_timeout" framespacing=0 hspace=0 vspace=0 marginheight=0 marginwidth=0 frameborder=0 src="/webvpn/timeout/test.html" height="1" width="1"></iframe>
+</body></html>

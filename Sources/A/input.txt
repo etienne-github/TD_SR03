@@ -1,0 +1,11 @@
+input.txt
+[Fichier d'entree du programme TD0 forkpipe.c].
+
+[003]Il contient des lignes [de longueurs variables].
+avec des lignes blanches (longuer [000])
+
+d'autres
+         commencant
+                    par des blancs.
+et enfin,
+une derniere ligne.

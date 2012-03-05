@@ -1,0 +1,606 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN">
+<!-- saved from url=(0088)https://vpnserv.utc.fr/http/0/tuxa.sme.utc/~sr03/td_2012/td_revisions_file_messages.html -->
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1"><script language="JavaScript" src="./TD01 SR03 Printemps 2012_files/mangle.js"></script>
+<!-- Modifi&eacute; f&eacute;vrier 2012 - UTC -->
+
+
+<title>TD01 SR03 Printemps 2012</title>
+<!-- style TYPE="text/css"></STYLE-->
+<link rel="StyleSheet" href="./TD01 SR03 Printemps 2012_files/siteuvsr.css" type="text/css">
+</head>
+<body>
+<!-- ________________________________________________________________________ -->
+<center><table border="" width="100%">
+<tbody><tr><td width="78">
+<center><img src="./TD01 SR03 Printemps 2012_files/utc.jpg" height="60" width="170" align="CENTER"></center></td>
+
+<td>
+<center><b><font color="#7F7F7F"><font size="+3">SR03 - Printemps 2012</font></font></b>&nbsp;</center>
+<center><b><font color="#7F7F7F"><font size="+3">TD 01</font></font></b></center>
+<center><b><font color="#7F7F7F"><font size="+3">Révisions appels systèmes Unix</font></font></b></center>
+<center><b><font color="#7F7F7F"><font size="+3">Communication par file de messages IPC</font></font></b></center>
+</td></tr>
+</tbody></table></center><hr>
+<!-- ________________________________________________________________________ -->
+<p id="tit2">
+<a href="https://vpnserv.utc.fr/http/0/tuxa.sme.utc/~sr03/td_2012/index.html">Retour page d'accueil sr03.</a><br>
+</p><hr>
+
+<span id="fd">Remarque préliminaire : </span> ce TD fait appel à des notions 
+vues dans l'UV SR02, UV dont les connaissances sont un prérequis de SR03.
+<p></p>
+
+<!--
+<hr>
+<P id="tit1"><b>TD 01 - A - popen-ls.c - Ex&eacute;c. commande et r&eacute;cup. sortie</b></P>
+<hr>
+
+<p>
+Travail sur l'ex&eacute;cution d'une commande depuis un programme C, avec
+r&eacute;cup&eacute;ration de la sortie. Utilisation des
+directives popen(), pclose(), fgets(), fprintf(), 
+setvbuf(), sprintf().
+</p>
+
+Ecrire un programme <b>popen-ls.c</b> qui produit la sortie suivante :
+<pre>
+$ ./popen-ls
+Fichier-- popen-ls* --l=10
+Fichier-- popen-ls.c --l=11
+Fichier-- pps* --l=5
+Fichier-- pps.c --l=6
+fgets eof
+sortie avait 4 lignes.
+</pre>
+<p>popen-ls.c utilise la commande "ls" (&agrave; travers un popen()), et en 
+r&eacute;cup&egrave;re le r&eacute;sultat ligne
+par ligne pour encadrer chaque nom de fichier list&eacute; par ses propres
+commentaires (Fichier-- ) et ( --l=xx).
+</p>
+<p><b><u>Nota:</u></b> pour traiter la sortie de popen() ligne &agrave; ligne il est
+n&eacute;cessaire de lui appliquer un setvbuf().
+</p>
+<p><b><u>Nota:</u></b> on remarque, sur la sortie exemple ci-dessus, 
+un marqueur "*" accol&eacute; &agrave; certains fichiers. Faites pareil (r&eacute;ponse 
+dans man ls).
+</p>
+<p><b><u>Nota:</u></b> popen-ls.c s'&eacute;crit en <b>22</b> lignes de C.
+</p>
+-->
+
+<!--
+<hr>
+<P id="tit1"><b>TD 01 - B - forkexec-ls.c - Ex&eacute;c. dans un fils et r&eacute;cup. sortie sur un pipe</b></P>
+<hr>
+
+Modifier le programme popen-ls.c ci-dessus en <b>forkexec-ls.c</b> qui produit 
+une sortie identique &agrave; popen-ls, mais sans utiliser la directive popen().
+
+On remplace le popen() par :
+<ul style="margin-top: 3px">
+  <li>cr&eacute;ation d'un pipe</li>
+  <li>fork d'un fils</li>
+  <li>le fils redirige sa sortie standard sur le pipe</li>
+  <li>le p&egrave;re boucle sur la lecture ligne par ligne de la sortie du pipe.</li>
+  <li>&agrave; la fin, le p&egrave;re r&eacute;cup&egrave;re le status de terminaison du fils.</li>
+</ul>
+
+<p><b><u>Nota:</u></b> forkexec-ls.c s'&eacute;crit en environ <b>55</b> lignes de C.
+</p>
+-->
+
+<!--
+<hr>
+<P id="tit1"><b>TD 01 - C - forkpipe.c - Process communiquant par un pipe</b></P>
+<hr>
+-->
+<hr>
+<p id="tit1"><b>TD 01 - A - forkpipe.c - Process communiquant par un pipe</b></p>
+<hr>
+
+Ecrire un programme qui crée DEUX sous-process communiquant
+par un pipe :
+<pre>             +------+
+             | père |
+             +------+
+              /    \
+       +-----+      +-----+
+       |fils1|======|fils2|
+       +-----+ pipe +-----+
+        
+</pre>
+<p>Le premier sous-process (fils1) écrit une suite de chaînes
+de caractères dans le pipe. Il trouve cette suite de caractères
+dans un fichier <a href="https://vpnserv.utc.fr/http/0/tuxa.sme.utc/~sr03/td_2012/input.txt"><b>input.txt</b></a><a>.
+</a></p><a>
+<p>Celles-ci sont lues par l'autre sous-process (fils2) et
+imprimées sur stdout.
+</p>
+
+<p><b><u>Nota:</u></b> le buffer de lecture du sous-process fils2 sera de longueur 20.
+</p>
+<p>"fils1" va envoyer sur le pipe des "messages" formatés ainsi :
+</p><pre class="ja">[009][input.txt]
+[nnn][ligne de nnn caractères]
+...
+</pre>
+<p></p>
+<p>"fils2" va lire le pipe, reconstituer les "messages" et reproduire  
+sur stdout la suite des messages encadrés d'un marqueur :
+</p><pre class="ja">reçu&gt;&gt;&gt;input.txt&lt;&lt;&lt;
+reçu&gt;&gt;&gt;[Fichier d'entrée du programme TD0 forkpipe.c].&lt;&lt;&lt;
+reçu&gt;&gt;&gt;&lt;&lt;&lt;
+...
+</pre>
+<p></p>
+
+<p>Ainsi, le premier fils envoie PLUSIEURS messages, tous de longueur
+INCONNUE du process lecteur, et le lecteur doit les reconstituer
+(séparer le premier message du deuxième, etc.).</p>
+
+<p><span id="ja">Inventez et implantez</span> une solution permettant cette 
+reconstitution des messages.</p>
+<p>Gérez les codes retour de lecture sur le pipe pour programmer
+correctement la terminaison du deuxième process.</p>
+
+<p id="tit2">Discussion sur le problème des messages dans un flux
+</p>
+<pre>On a deux grands choix :
+ - travailler sur le <span id="ja">contenant</span> : encapsulation
+   des données utiles dans des données de gestion;
+ - travailler sur le <span id="ja">contenu</span> : utiliser des 
+   <span id="ja">marqueurs</span> de début et/ou de fin de messages. Ceci 
+   suppose que les marqueurs ne sont jamais présents 
+   dans les données, ce que l'on peut assurer par des 
+   techniques d'échappement.
+
++---------------+       	+---------------+
+| type en-tête	|       	|marqueur début |
++---------------+       	+---------------+
+|   nombre	|-------+	| &lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt; |
++---------------+       |	+---------------+
+    +---------------+	|	    +---------------+
+    | type data     |	|	    | type data     |
+    +---------------+	|	    +---------------+
+    |	data	    |	|	    |	data	    |
+    +---------------+	|	    +---------------+
+    ....	     	|	    ....
+    +---------------+	|	    +---------------+
+    | type data     |	|	    | type data     |
+    +---------------+	|	    +---------------+
+    |	data	    |	|	    |	data	    |
+    +---------------+	|	    +---------------+
++---------------+       |	+---------------+
+| en-tête "fin"	| &lt;-----+	|marqueur "fin" |
++---------------+       	+---------------+
+|     --	|       	| &gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt; |
++---------------+       	+---------------+
+
+L'important est de pouvoir assurer une extraction fiable,
+depuis le flux, d'une série de messages de longueur
+différentes, ces longueurs n'étant pas connues à l'avance,
+mais découvertes au fur et à mesure de la lecture du flux.
+</pre>
+
+<!--
+<hr>
+<P id="tit1"><b>TD 01 - D - savobj.c + lirobj.c - Manipulation de structures</b></P>
+<hr>
+
+D&eacute;finir dans un fichier <b>defobj.h</b> un <b>typedef struct { ...} obj;</b> 
+qui d&eacute;crit la structure suivante :
+<pre>
++---------------+
+| char [max 12]	|
+|		|
++---------------+
+| char [max 24]	|
+|		|
+|		|
++---------------+
+| int ii	|
++---------------+
+| int jj	|
++---------------+
+| double dd	|
+|		|
++---------------+
+</pre>
+
+Construire un fichier <b>iniobj.h</b> qui initialise un tableau d'objets
+(longueur du tableau d&eacute;finie par #define tablen n)
+de type "obj" tels que d&eacute;crits ci-dessus.
+<pre>
+  "ident_o1", "description_o1", 11, 12, 10.2345
+  "ident_o2", "description_o2", 21, 22, 20.2345
+  "ident_o3", "description_o3", 31, 32, 30.2345
+</pre>
+
+Ecrire un programme <b>savobj.c</b> qui va inclure les 2 fichiers .h d&eacute;finis
+ci-dessus et qui va:
+<pre id=fd>
+- ouvrir en &eacute;criture un fichier <b>savobj.dat</b>
+- pour chaque objet du tableau :
+	. appeler une fonction savobj(obj, file)
+- fermer savobj.dat
+La fonction savobj(obj, file) &eacute;crit le contenu <b>binaire</b>
+de l'objet dans le fichier.
+</pre>
+
+
+Ecrire un programme <b>lirobj.c</b> qui va inclure les 2 fichiers .h d&eacute;finis
+ci-dessus et qui va:
+<pre id=fd>
+- ouvrir en lecture le fichier <b>savobj.dat</b>
+- pour chaque objet du tableau :
+	. appeler une fonction lirobj(obj, file)
+	. appeler une fonction priobj(obj)
+- fermer savobj.dat
+La fonction lirobj(obj, file) va lire en <b>binaire</b> 
+dans le fichier de quoi remplir un objet "obj".
+La fonction priobj(obj) imprime sur stdout le contenu de l'objet.
+</pre>
+-->
+
+<hr>
+<p id="tit1"><b>TD 01 - B - Communication par file de messages IPC</b></p>
+<hr>
+
+<p>
+Nous allons construire une simulation d'un dispositif clients-serveur.
+</p>
+
+<p>
+Un serveur va conserver et gérer des objets informatiques représentant
+des stocks d'objets réels.
+</p>
+
+Des clients vont se connecter au serveur et pourront effectuer des
+opérations telles que :
+<ul style="margin-top: 2px">
+  <li> demander la création d'un panier d'achat,</li>
+  <li> demander au serveur la liste des types d'objets disponibles,</li>
+  <li> pour un type d'objets, demander l'état du stock et le prix,</li>
+  <li> demander de prélever "n" objets d'un type et de les mettre
+       dans le panier d'achat,</li>
+  <li> demander d'enlever "k" objets du panier,</li>
+  <li> vider le panier,</li>
+  <li> acheter le contenu du panier.</li>
+</ul>
+
+<!--
+<p>
+Cette simulation d'application va servir de "fil rouge" tout au
+long de l'UV : on va l'impl&eacute;menter plusieurs fois, en utilisant
+&agrave; chaque fois une technique diff&eacute;rente (ou si on veut parler p&eacute;dant,
+une technologie internet diff&eacute;rente).
+</p>
+
+<p>
+Ceci permettra de bien voir les diff&eacute;rences entre chaque technique
+et les prob&egrave;lmes particulier que chacune peut poser.
+</p>
+-->
+
+<p>
+Le serveur peut être interrogé simultanément par un nombre quelconque
+(ou presque) de clients.
+</p>
+
+<!--
+<p>
+Les r&eacute;ponses aussi bien que les requ&ecirc;tes passeront dans chaque TD par
+un m&eacute;canisme de transport diff&eacute;rent.
+</p>
+-->
+
+Nous auront<!-- &agrave; chaque fois--> deux niveaux à considérer :
+<ul style="margin-top: 2px">
+  <li> le <span id="ja">niveau de l'échange de données "applicatives"</span> entre
+       les clients et le serveur,</li>
+  <li> le <span id="ja">niveau du "transport"</span> des données échangées entre
+       les clients et le serveur.</li>
+</ul>
+
+<!--
+<p>
+Ainsi, en faisant attention de bien distinguer dans le code, ce qui
+rel&egrave;ve du <span id="ja">niveau transport</span> de ce qui rel&egrave;ve du 
+<span id="ja">niveau applicatif</span>, il
+sera beaucoup plus facile de r&eacute;-implanter l'application avec un
+m&eacute;canisme diff&eacute;rent.
+</p>
+-->
+
+<p>
+Cette séparation des responsabilités entre deux niveaux (ont dit plutôt
+deux <span id="ja">couches</span> dans le vocabulaire des réseaux) est typique de la 
+construction des applications utilisant des réseaux. On dit que la
+<span id="ja">couche basse fournit un "service de transport"</span> à la couche haute.
+</p>
+
+<!--
+<hr>
+<P id="tit1"><b>Le TD</b></P>
+-->
+<hr>
+
+<p>
+Dans ce TD, le mécanisme d'échange entre les clients et le serveur
+sera <span id="ja">l'IPC Unix "File de Messages"</span>.
+</p>
+Ce mécanisme sera utilisé de la façon suivante :
+<ul style="margin-top: 2px">
+  <li> les clients et le serveur utiliseront la <span id="ja">même</span> file de messages,</li>
+  <li> ni les clients, ni le serveur n'effectueront de lectures inutiles
+  dans la file, grâce à l'utilisation astucieuse du <span id="ja">champ "type"</span> des
+  messages posés dans une file de messages Unix.</li>
+</ul>
+
+<p>
+Il faudra choisir un moyen d'identifier les requêtes des clients et 
+les réponses du serveur vers les clients. 
+</p>
+
+<p>
+La difficulté principale vient du fait que tous les clients posent 
+leur message de requête dans la même file et que le serveur pose tous 
+les messages de réponse dans cette file également.
+</p>
+
+<p>
+On aura donc n+1 process lisant des messages dans la même file : 
+il leur faut un moyen pour ne lire QUE les messages qui leur sont destinés.
+</p>
+
+<p>
+On va utiliser une particularité du fonctionnement de la file de messages
+Unix : on peut faire une <span id="ja">lecture sur la file qui ne donne en réponse QUE
+les messages dont le champ "type" est égal à une valeur donnée</span>.
+</p>
+
+<p>
+Il suffit donc d'associer une valeur particulière de "type" pour les 
+messages "requêtes", ainsi seul le serveur lira ces messages.
+</p>
+
+<p>
+Mais il faut aussi associer une valeur de type différente pour chaque 
+client.
+</p>
+
+<p>
+La difficulté principale vient du choix d'une méthode permettant 
+d'affecter un muméro de type différent à chaque client.
+</p>
+
+<p>
+C'est un problème, classique dans le cadre d'applications distribuées, 
+de <span id="ja">nommage</span>. 
+</p>
+
+<p>
+On peut distinguer deux façons de résoudre ce problème de nommage
+(ici d'affectation d'un numéro unique à chaque client).
+</p>
+
+<p>
+Les méthodes externes ci-dessous sont données à titre d'information,
+on utilisera dans ce TD la méthode "interne", plus simple dans ce cas.
+</p>
+
+
+<span id="ja"><u>Méthode "externe" :</u> </span>
+<br><br>
+On construit un mécanisme indépendant de la file de messages
+et du serveur. Chaque nouveau client exécute :
+<br>  - demander un numéro de client unique
+<br>  - utiliser le serveur pour une ou plusieurs transactions
+<br>  - libérer le numéro de client.
+<br><br>Le mécanisme d'allocation/distribution des numéros uniques
+doit être accédé de manière ATOMIQUE (section critique), afin
+d'assurer que deux clients ne prennent le même numéro.
+<br><br>
+Ce mécanisme peut être :<br>
+<br>- un fichier commun "connu" et accédé avec un verrou exclusif
+<br>- un vecteur de bits conservés par le système (par exemple un
+  ensemble de sémaphores sous Unix),
+<br>- utiliser simplement le pid du process (tous différents sur
+  la même machine), mais cette méthode ne fonctionne pas si
+  on utilise des threads;
+<br>- créer un "serveur de numéros" qui écoute sur un socket et
+  est implémenté comme un serveur concourant (1 seul client
+  connecté à la fois);
+<br>- etc.
+<br><br>
+<span id="ja"><u>Méthode "interne" :</u></span>
+<br><br>
+On fait faire ce travail par le serveur lui-même :
+on lui ajoute une requête spéciale 
+<span id="jap">"demande de numéro client"</span>.
+Quand il trouve une requête de ce type dans la file, le
+serveur choisit un numéro libre puis pose dans la file un
+message <span id="jap">"nouveau client"</span> contenant le numéro de client
+unique.<br>
+Le client qui a posé la requête n'a qu'à lire dans la file
+le premier message disponible de type "nouveau client".
+<br><br>
+On pourrait objecter "mais comment ce nouveau client sait-il
+que le message qu'il va lire est pour lui (et non pas pour
+un autre nouveau client qui l'aurait demandé presque en même
+temps) ?".
+<br><br>
+Eh bien ! Il ne le sait pas, et PEU IMPORTE. Ce qui compte
+c'est qu'il va être le seul à obtenir ce numéro, puisque en
+le lisant, il retire le message de la file, personne d'autre
+ne l'aura. Ce qui compte ici, c'est l'UNICITE, l'ordre importe
+peu.
+<br>
+
+<p>
+Nous disposons maintenant d'un moyen d'échange de messages entre les
+clients et le serveur.
+</p>
+Les messages posés dans une file de message ont la structure suivante
+(voir man msgop) :
+<pre>    struct msgbuf {
+   	  long mtype;	  /* message type, must be &gt; 0 */
+   	  char mtext[1];  /* message data */
+    };
+</pre>
+
+<p>
+Voir aussi dans "man msgop" l'utilisation du paramètre "msgtyp" de l'appel
+système msgrcv(2).
+</p>
+
+L'élément "mtype" des messages va nous permettre de distinguer les
+différents types de destinataires possibles : 
+<ul style="margin-top: 2px">
+  <li> le serveur,</li>
+  <li> les clients non identifiés,</li>
+  <li> les clients identifiés.</li>
+</ul>
+
+<p>
+Ensuite, les clients pourront envoyer et recevoir du serveur des messages
+de différentes sortes, chacun correspondant à une des opérations prévues
+au cahier des charges du serveur.
+</p>
+
+<p>
+<span id="ja"><u>** Attention **</u></span> Dans la dernière phrase on a 
+employé les mots "de différentes sortes" pour bien les distinguer des
+mots "différents types".
+</p>
+En effet, on manipule dans l'application 
+<span id="jap">deux "types" imbriqués</span> : 
+<ul style="margin-top: 2px">
+  <li>  le type au sens file_mess_IPC
+(c'est-à-dire au sens du procédé de transport du message)
+qui va nous permettre de distinguer le destinataire
+(soit le serveur, soir UN client particulier, soit un client non identifié),</li>
+  <li>  le type au sens de l'application, par exemple :
+<ul style="margin-top: 2px">
+  <li> 	message de type creer_panier,
+  </li><li> 	message de type lister_objets,
+  </li><li> 	message de type etat_objet, ...
+</li></ul>
+</li></ul>
+
+<p>
+Un message de type "etat_objet" au sens de l'application sera lui-même
+<span id="jap">encapsulé</span> dans un message de type (client-&gt;serveur) 
+au sens de la file de messages.
+</p>
+<pre>Message_IPC :
+	+---------------+  \
+	| type_mess_IPC	|   } en-tête utilisée par le mécanisme
+	+---------------+  /  d'échange (de transport)
+	| data appli	| \
+   +---	|		|  } corps du message : le contenu n'est
+   |	+---------------+ /  exploré que par la partie applicative
+   |
+   |
+   |		Message_cliser :
+   V		  /--&gt;	+---------------+
++---------------+/	| type_message  |	typ_me_cliser
+| data appli	|	+---------------+
+|		|	| data  	|
++---------------+\	| échangées	|
+		  \	|		|
+		   \-&gt;	+---------------+
+</pre>
+
+<p>
+En reprenant le cahier des charges du serveur, on peut lister tous
+les types de messages "application" susceptibles d'être échangés.
+</p>
+<pre>Echanges serveur &lt;--&gt; clients non-identifiés
+
+   cli_noid ---[demande numéro client]---&gt; serveur     typ_dem_num     
+   cli_noid &lt;---[fournir numéro client]--- serveur     typ_new_num
+
+Echanges serveur &lt;--&gt; clients identifiés
+   cli_nnn ---[]---&gt; serveur
+   cli_nnn &lt;---[]--- serveur
+
+   cli_nnn ---[demande liste objets]---&gt; serveur       typ_dem_list
+   cli_nnn &lt;---[fournir liste objets]--- serveur       typ_list_obj
+
+   cli_nnn ---[demande état objet]---&gt; serveur         typ_dem_obj
+   cli_nnn &lt;---[fournir état objet]--- serveur         typ_etat_obj
+
+   cli_nnn ---[ajout n objets au panier]---&gt; serveur   typ_aj_panier
+   cli_nnn &lt;---[fournir état panier]--- serveur        typ_panier
+
+   cli_nnn ---[enlève n objets au panier]---&gt; serveur  typ_en_panier
+   cli_nnn &lt;---[fournir état panier]--- serveur        typ_panier
+
+   cli_nnn ---[vider panier]---&gt; serveur	       typ_vide_pan
+   cli_nnn &lt;---[fournir état panier]--- serveur        typ_panier
+
+   cli_nnn ---[acheter panier]---&gt; serveur	       typ_achat
+   cli_nnn &lt;---[fournir facture]--- serveur	       typ_facture
+</pre>
+
+<p>
+Ensuite, pour chaque type de message serveur &lt;--&gt; clients,
+il faut définir le contenu du message, c-à-d les data échangées.
+Par exemple :
+</p>
+<pre>	{ typ_dem_list }
+	{ typ_list_obj, n, "id_obj1", "id_obj2",... , "id_objn"}
+	{ typ_dem_obj, "ident_objet"}
+	{ typ_etat_obj, struct obj }
+</pre>
+<hr>
+<p id="tit2">
+Travail à faire<br>
+</p>
+
+<p>
+Ecrire un serveur <b>sermess.c</b> et un client <b>climess.c</b>
+</p>
+
+<p>
+<b>sermess.c</b> va initialiser une table interne d'objets ("iniobj.h"),
+créer une file de messages,
+puis se mettre en attente de l'arrivée de requêtes. La programmation
+de ce TD est grandement facilitée par le fait que la directive <b>msgrcv(2)</b>
+peut être <span id="jap">bloquante</span>.
+</p>
+
+<p>
+<b>climess.c</b> va demander un numéro de client, récupérer ce numéro, envoyer
+2 ou 3 requêtes au serveur sur la file de messages et lire les réponses.
+</p>
+
+<p>
+Il n'est pas obligatoire d'implémenter tous les types de requêtes définies
+dans l'analyse ci-dessus. On fera en fonction du temps disponible.
+</p>
+
+<br>
+<p><b><u>Pour simplifier la réalisation :</u></b>
+</p><ul style="margin-top: 2px">
+  <li>choisir comme token un fichier local, par exemple "./mon_login_sr03"</li>
+  <li>mettre comme drapeaux de création de la file : "IPC_CREAT|IPC_EXCL|0666"</li>
+  <li>décider que le serveur traite, au maximum, 2 clients simultanément (NB_MAX_CLT_SIM_ = 2), avant de rejeter proprement les autres</li>
+  <li>décider que le serveur traite, au maximum, 4 clients (NB_MAX_CLT = 4), avant de rejeter proprement les autres et de s'arrêter</li>
+  <li>décider que le serveur gère 3 types d'objets (NB_MAX_TYP_OBJ = 3)</li>
+</ul>
+Ceci permet d'utiliser dans le serveur des structures statiques pour gérer
+les clients, les paniers et les objets. En effet on s'intéresse dans cette
+UV aux problèmes de <b>communication</b>, pas de gestion de données.
+<p></p>
+
+<hr>
+<script language="JavaScript">
+if (window.onload) webvpn_onload_handler = window.onload
+window.onload=webvpn_show_body_toolbar
+</script>
+</a><div id="webvpnicons" style="position: absolute; top: 0px; z-index: 5000; left: 1125px; visibility: visible; "><a><nobr><img onclick="webvpn_moveit()" alt="Move to other side" title="Move to other side" border="0" src="./TD01 SR03 Printemps 2012_files/move24.gif"></nobr></a><nobr><a href="javascript:webvpn_go()"><img alt="Go to Address Page" title="Go to Address" border="0" src="./TD01 SR03 Printemps 2012_files/go24.gif"></a><img onclick="webvpn_open_toolbar()" alt="Show Toolbar" title="Show Toolbar" border="0" src="./TD01 SR03 Printemps 2012_files/toolbar24.gif"><a href="https://vpnserv.utc.fr/webvpn/index.html"><img alt="Home Page" title="Home Page" border="0" src="./TD01 SR03 Printemps 2012_files/home24.gif"></a><a href="javascript:webvpn_logout()"><img alt="Logout" title="Logout" border="0" src="./TD01 SR03 Printemps 2012_files/logout24.gif"></a></nobr></div>
+<script language="JavaScript">webvpn_frame(24*5)</script><iframe name="webvpn_timeout" framespacing="0" hspace="0" vspace="0" marginheight="0" marginwidth="0" frameborder="0" src="./TD01 SR03 Printemps 2012_files/test.html" height="1" width="1"></iframe>
+
+</body><link rel="stylesheet" type="text/css" href="data:text/css,"></html>
