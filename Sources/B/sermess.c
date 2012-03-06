@@ -11,8 +11,75 @@
 //}
 
 
+int traitementDemandeConnexion(int* nbClientServis,int* nbClientActuels, msgbuf* msgBufferSnd){
+
+			if ((*nbClientActuels < NB_MAX_CLT_SIM)&&(*nbClientServis<NB_MAX_CLT))
+			{
+				(*nbClientServis)++;
+				(*nbClientActuels)++;
+
+				msgBufferSnd->mtype=ADR_COMMUNE; //adresse de la boite de réception commune
+				msgBufferSnd->id=1+*nbClientServis;
+				msgBufferSnd->qType=typ_new_num;
+	
+				return 0;
+			}
+			else
+			{
+				//Le client est rejeté	
+				msgBufferSnd->mtype=ADR_COMMUNE; //adresse d'un client non-identifié
+				msgBufferSnd->id=-2;
+				msgBufferSnd->qType=typ_new_num;
+
+				return -1;
+			}
+}
+
+int traitementAffichageListeObjet(msgbuf msgBufferRcv,msgbuf* msgBufferSnd,fruit *table)
+{
+	int i;
+	//création du message
+	msgBufferSnd->mtype=msgBufferRcv.id; //adresse du client demandeur
+	msgBufferSnd->qType=typ_list_obj; //message de type list_obj
+		
+	//Generation du message
+	for (i=0; i < NB_MAX_TYP_OBJ; i++)
+	{
+		strcpy(msgBufferSnd->nom[i], table[i].nom);
+	}
+	return 0;
+}
 
 
+int traitementDemandeStock(msgbuf msgBufferRcv,msgbuf* msgBufferSnd,fruit *table)
+{
+		msgBufferSnd->mtype=msgBufferRcv.id; //adresse du client demandeur
+		msgBufferSnd->qType=typ_etat_obj_stock;
+		msgBufferSnd->stock=table[msgBufferRcv.stock].stock;
+		return 0;
+}
+
+
+int traitementDemandePrix(msgbuf msgBufferRcv,msgbuf* msgBufferSnd,fruit *table)
+{
+		msgBufferSnd->mtype=msgBufferRcv.id; //adresse du client demandeur
+		msgBufferSnd->qType=typ_etat_obj_prix;
+		msgBufferSnd->prix=table[msgBufferRcv.stock].prix;
+
+		return 0;
+}
+
+
+int traitementDemandeDeconnexion(int* nbClientActuels,msgbuf msgBufferRcv, msgbuf* msgBufferSnd)
+{
+		msgBufferSnd->mtype=msgBufferRcv.id; //adresse du client demandeur
+		msgBufferSnd->qType=typ_info_deco;
+		
+		
+		(*nbClientActuels)--;
+
+		return 0;
+}
 
 //Dans client faire un menu pour faire les requetes sur les objets
 //ipcsrm -q id (-q pour queue)
@@ -23,21 +90,27 @@
 
 
 int main(){
-	//initialisation de la table
-	fruit *table = init_obj();
 	
-	int i;
+	
+	
+	//Déclaration des variables locales
 	int nbClientServis=0;
 	int nbClientActuels=0;
+
 	msgbuf msgBufferRcv;
 	msgbuf msgBufferSnd;
+	fruit *table = init_obj();//initialisation de la table
+
+
+	//Début de la fonction 
+
 
 	//Création d'une clé
 	key_t cle;
-	cle= ftok("./SR03P0xxx",0);
+	cle= ftok("./mon_login_sr03",0);
 	if (cle == -1)
 	{
-		perror("Erreur création clé");
+		perror("@1 (Serveur) - Erreur création clé");
 		return -1;
 	}
 
@@ -45,113 +118,94 @@ int main(){
 	int id_file= msgget(cle,IPC_CREAT|IPC_EXCL|0666);
 	if (id_file == -1)
 	{
-		perror("Erreur creation de file\n");
+		perror("@1 (Serveur) - Erreur creation de file");
 		return -1;
 	}
 
-	while(nbClientServis<NB_MAX_CLT || nbClientActuels > 0){
 	
-	printf("@%d - Attente d'une requete\n",1);	
+
+	//Tant que l'on a pas traité le nombre de client à traiter ou qu'il reste des clients connectés
+	while((nbClientServis<NB_MAX_CLT) || (nbClientActuels > 0)){
+
+
+	//Reception des requetes
+	printf("@%d (Serveur) - Attente d'une requete..\n",1);	
 	msgrcv(id_file,&msgBufferRcv,sizeof(msgbuf)-sizeof(long),1,0); 
-	printf("@%d - Requête reçue %ld\n",1,(long)msgBufferRcv.mtype);
 	
-	//traitement d'une demande de connexion
-	if (msgBufferRcv.qType == typ_dem_num)
+
+	//Traitement des requetes
+	switch(msgBufferRcv.qType)
 	{
-		//il est possible de traiter la demande
-		if (nbClientActuels < NB_MAX_CLT_SIM)
-		{
-			nbClientServis++;
-			nbClientActuels++;
-		
-			msgBufferSnd.mtype=ADR_COMMUNE; //adresse de la boite de réception commune
-			msgBufferSnd.id=1+nbClientServis;
-			msgBufferSnd.qType=typ_new_num;
-	
-	
+		//traitement d'une demande de connexion
+		case typ_dem_num :
+
+			printf("@1 (Serveur) - Requête [Demande de Connexion] reçue.\n");
+			//il est possible de traiter la demande
+			if (traitementDemandeConnexion(&nbClientServis,&nbClientActuels, &msgBufferSnd)==0) 	
+			{		
+				msgsnd(id_file,&msgBufferSnd,sizeof(msgbuf)-sizeof(long),0); 
+				printf("@1 (Serveur) - Envoi d'un nouvel ID (%d) à l'adresse @6(Commun)\n",msgBufferSnd.id);
+			} else {
+				msgsnd(id_file,&msgBufferSnd,sizeof(msgbuf)-sizeof(long),0); 
+				printf("@1 (Serveur) - Envoi une notification de refus de connexion à l'adresse @6(Commun)\n",msgBufferSnd.id);
+			
+			}
+			break;
+
+		//demande d'affichage de la liste d'objets
+		case typ_dem_list :
+			printf("@1 (Serveur) - Requête [Liste d'Objet] reçue de @%d.\n",msgBufferSnd.id);
+			traitementAffichageListeObjet(msgBufferRcv,&msgBufferSnd,table);
 			msgsnd(id_file,&msgBufferSnd,sizeof(msgbuf)-sizeof(long),0); 
-			printf("@1 - Envoi de l'id %d à l'adresse @6(Commun)\n",msgBufferSnd.id);
-		}
-		else
-		{
-			//Le client est rejeté	
-			msgBufferSnd.mtype=ADR_COMMUNE; //adresse d'un client non-identifié
-			msgBufferSnd.id=-2;
-			msgBufferSnd.qType=typ_new_num;
+			printf("@1 (Serveur) - Envoi de la liste des objets à l'adresse @%d \n",msgBufferSnd.id);
+		
+			break;
+
+		//demande d'affichage du stock d'un objet
+		case typ_dem_obj_stock :
+			printf("@1 (Serveur) - Requête [Stock d'un Objet] reçue de @%d.\n",msgBufferSnd.id);
+			traitementDemandeStock(msgBufferRcv,&msgBufferSnd,table);
 			msgsnd(id_file,&msgBufferSnd,sizeof(msgbuf)-sizeof(long),0); 
-			printf("@1 - Envoi une notification de refus de connexion à l'adresse @6(Commun)\n",msgBufferSnd.id);
+			printf("@1 (Serveur) - Envoi du stock à l'adresse @%d \n",msgBufferSnd.id);
+
+			break;
+
+		//demande d'affichage du prix d'un objet
+		case typ_dem_obj_prix :
+
+			printf("@1 (Serveur) - Requête [Prix d'un Objet] reçue de @%d.\n",msgBufferSnd.id);
+			traitementDemandePrix(msgBufferRcv,&msgBufferSnd,table);
+			msgsnd(id_file,&msgBufferSnd,sizeof(msgbuf)-sizeof(long),0); 
+			printf("@1 (Serveur) - Envoi du prix à l'adresse @%d \n",msgBufferSnd.id);	
+
+			break;
+
+		//traitement d'une demande de déconnexion
+		case typ_dem_deco :
+			printf("@1 (Serveur) - Requête [Demande de Déconnexion] reçue de @%d.\n",msgBufferSnd.id);
+			traitementDemandeDeconnexion(&nbClientActuels,msgBufferRcv,&msgBufferSnd);
+			msgsnd(id_file,&msgBufferSnd,sizeof(msgbuf)-sizeof(long),0);
+			printf("@1 (Serveur) - Acceptation de la déconnexion pour le client @%d \n",msgBufferRcv.id);
+			break;
+
+		
+		default:
+			printf("@1 (Serveur) - Requête reçue inconnue.\n");
+			break;
+
 		}
 	}
-	//demande d'affichage de la liste d'objets
-	if (msgBufferRcv.qType == typ_dem_list)
-	{
-		//création du message
-		msgBufferSnd.mtype=msgBufferRcv.id; //adresse du client demandeur
-		msgBufferSnd.qType=typ_list_obj; //message de type list_obj
-		
-		//Generation du message
-		for (i=0; i < NB_MAX_TYP_OBJ; i++)
-		{
-			strcpy(msgBufferSnd.nom[i], table[i].nom);
-			printf("%s \n",msgBufferSnd.nom[i]);
-		}
-		
-		//envoi du message
-		msgsnd(id_file,&msgBufferSnd,sizeof(msgbuf)-sizeof(long),0); 
-		printf("@1 - Envoi de la liste des objets à l'adresse @%d \n",msgBufferSnd.id);
-		
-		
-		
-	}
 	
-	if (msgBufferRcv.qType == typ_dem_obj_stock)
-	{
-		//création du message
-		msgBufferSnd.mtype=msgBufferRcv.id; //adresse du client demandeur
-		msgBufferSnd.qType=typ_etat_obj_stock;
-		msgBufferSnd.stock=table[msgBufferRcv.stock].stock;
-		
-		//envoi du message
-		msgsnd(id_file,&msgBufferSnd,sizeof(msgbuf)-sizeof(long),0); 
-		printf("@1 - Envoi du stock à l'adresse @%d \n",msgBufferSnd.id);
-		
-	}
 	
-	if (msgBufferRcv.qType == typ_dem_obj_prix)
-	{
-		//création du message
-		msgBufferSnd.mtype=msgBufferRcv.id; //adresse du client demandeur
-		msgBufferSnd.qType=typ_etat_obj_prix;
-		msgBufferSnd.prix=table[msgBufferRcv.stock].prix;
-		
-		//envoi du message
-		msgsnd(id_file,&msgBufferSnd,sizeof(msgbuf)-sizeof(long),0); 
-		printf("@1 - Envoi du prix à l'adresse @%d \n",msgBufferSnd.id);		
-	}	
 	
-	if (msgBufferRcv.qType == typ_dem_deco)
-	{
-		//création du message
-		msgBufferSnd.mtype=msgBufferRcv.id; //adresse du client demandeur
-		msgBufferSnd.qType=typ_info_deco;
-		
-		//envoi du message
-		msgsnd(id_file,&msgBufferSnd,sizeof(msgbuf)-sizeof(long),0);
-		nbClientActuels--;
-		printf("@1 - Acceptation de la déconnexion pour le client @%d \n",msgBufferRcv.id);		
-	}			
+	//Fermeture du serveur
+	printf("@1 (Serveur) - Les %d clients ont été traités, fermeture.\n",NB_MAX_CLT);
+
+	//Fermeture de la liste de message
+	while(!msgctl ( id_file, IPC_RMID,0)){}
 	
-	}
-	
-	printf("Les %d clients ont été traités, fermeture.\n",NB_MAX_CLT);
 	return 0;
 
 
 }
 
-
-/*TODO
-- Appeler la clé fichier comme sur le sujet
-- Formaliser les messages d'erreur "SERVEUR : erreur blablabla" ou "CLIENTX : erreur blablabla"
-- Variable de qType pas très explicites ?
-- FERMER LA FILE DE MESSAGES !!*/

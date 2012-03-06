@@ -10,8 +10,8 @@
 
 #define NB_MAX_TYP_OBJ 3 //Nombre max de type d'objet
 #define LONGUEUR_TEXTE 25 //Longueur du texte dans un message
+#define NB_MAX_CLT 4
 const int NB_MAX_CLT_SIM = 2; //Nombre maximum de client simultanés
-const int NB_MAX_CLT = 4; //Nombre max de client à traiter avant fermeture
 const int ADR_COMMUNE = NB_MAX_CLT + 2; //Adresse de reception commune pour les nouveaux clients
 
 

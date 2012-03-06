@@ -13,7 +13,7 @@ fruit* init_obj()
 	if (tab == NULL )
 	{
 		printf ("Erreur d'allocation mémoire");
-		return -1;
+		return NULL;
 	}
 	
 	//Remplissage de la table
