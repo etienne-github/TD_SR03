@@ -100,7 +100,11 @@ int main(){
 	msgbuf msgBufferRcv;
 	msgbuf msgBufferSnd;
 	fruit *table = init_obj();//initialisation de la table
-
+    if (fruit == NULL)
+	{
+		printf("@1 (Serveur) - Erreur initialisation table d'objets.");
+		return -1;
+	}
 
 	//Début de la fonction 
 

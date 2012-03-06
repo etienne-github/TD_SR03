@@ -3,8 +3,11 @@
 void PressEnterToContinue(void)
 { 
 	char* C=(char*)malloc(100*sizeof(char));
-	printf("Entrez n'importe quel caractère pour continuer....\n");
-	scanf("%s",C);
+    if(C!=NULL)
+    {
+        printf("Entrez n'importe quel caractère pour continuer....\n");
+        scanf("%s",C);
+    }
 }
 
 
@@ -77,7 +80,7 @@ int main(){
 	while (1)
 	{
 		printf("****************************************************************\n");
-		printf("			MENU PRINCIPAL                          \n");
+		printf("		            	MENU PRINCIPAL                          \n");
 		printf("****************************************************************\n");
 		printf("1 - Afficher la liste des objets disponibles\n");
 		printf("2 - Afficher le stock d'un type d'objet\n");

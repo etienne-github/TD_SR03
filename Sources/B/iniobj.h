@@ -12,7 +12,7 @@ fruit* init_obj()
 	fruit *tab=(fruit *)malloc(NB_MAX_TYP_OBJ*sizeof(fruit));
 	if (tab == NULL )
 	{
-		printf ("Erreur d'allocation mémoire");
+		printf ("Erreur d'allocation memoire");
 		return NULL;
 	}
 	
