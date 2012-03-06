@@ -37,7 +37,7 @@ void logout(){
 }
 
 int main(){
-	int id=NB_MAX_CLT + 2;
+	int id=ADR_COMMUNE; //Initialiser l'adresse du client à l'adresse de recetin commune
 	int i;
 	int choix_menu;
 	msgbuf msgBufferRcv;

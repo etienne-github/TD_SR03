@@ -64,7 +64,7 @@ int main(){
 			nbClientServis++;
 			nbClientActuels++;
 		
-			msgBufferSnd.mtype=NB_MAX_CLT + 2; //adresse d'un client non-identifié
+			msgBufferSnd.mtype=ADR_COMMUNE; //adresse de la boite de réception commune
 			msgBufferSnd.id=1+nbClientServis;
 			msgBufferSnd.qType=typ_new_num;
 	
@@ -75,11 +75,11 @@ int main(){
 		else
 		{
 			//Le client est rejeté	
-			msgBufferSnd.mtype=NB_MAX_CLT + 2; //adresse d'un client non-identifié
+			msgBufferSnd.mtype=ADR_COMMUNE; //adresse d'un client non-identifié
 			msgBufferSnd.id=-2;
 			msgBufferSnd.qType=typ_new_num;
 			msgsnd(id_file,&msgBufferSnd,sizeof(msgbuf)-sizeof(long),0); 
-			printf("@1 - Envoi de l'id %d à l'adresse @6(Refus)\n",msgBufferSnd.id);
+			printf("@1 - Envoi une notification de refus de connexion à l'adresse @6(Commun)\n",msgBufferSnd.id);
 		}
 	}
 	//demande d'affichage de la liste d'objets
@@ -87,7 +87,9 @@ int main(){
 	{
 		//création du message
 		msgBufferSnd.mtype=msgBufferRcv.id; //adresse du client demandeur
-		msgBufferSnd.qType=typ_list_obj;
+		msgBufferSnd.qType=typ_list_obj; //message de type list_obj
+		
+		//Generation du message
 		for (i=0; i < NB_MAX_TYP_OBJ; i++)
 		{
 			strcpy(msgBufferSnd.nom[i], table[i].nom);
@@ -146,3 +148,10 @@ int main(){
 
 
 }
+
+
+/*TODO
+- Appeler la clé fichier comme sur le sujet
+- Formaliser les messages d'erreur "SERVEUR : erreur blablabla" ou "CLIENTX : erreur blablabla"
+- Variable de qType pas très explicites ?
+- FERMER LA FILE DE MESSAGES !!*/
