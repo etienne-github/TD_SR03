@@ -1,4 +1,78 @@
 #include "MsgDef.h"
+#include "signal.h"
+
+
+/*****************************************************
+
+		PROTOTYPES
+
+******************************************************/
+
+
+//Routine d'interruption
+void handlerInteruption();
+
+//Attendre entrée pour continuer
+void PressEnterToContinue(void);
+
+//Connexion
+int login(int* adresse, int* id_file, int* id_client);
+
+//Deconnexion
+void logout();
+
+
+/*****************************************************
+
+		DECLARATION DE VARIABLES
+
+******************************************************/
+
+
+
+/*----------------STRUCTURE SIGACTION----------------------*/
+
+
+struct sigaction act = {handlerInteruption,0,0,0};
+
+
+/*----------------IDENTIFIANT CLIENT----------------------*/
+
+int id=0;
+
+/*----------------FILE DE MESSAGES----------------------*/
+int id_file=-1;
+
+
+/*****************************************************
+
+		DECLARATION DE FONCTIONS
+
+******************************************************/
+
+
+
+/*----------------ROUTINE D'INTERRUPTION----------------------*/
+
+void handlerInteruption()
+{
+	msgbuf msgBufferSnd;
+
+	//Deconnexion
+	//Création d'un message pour demander la deconnexion
+	msgBufferSnd.mtype = 1; //ADRESSE SERVEUR
+	msgBufferSnd.qType = typ_dem_deco;
+	msgBufferSnd.id = id;
+
+	//Envoi du message demandant la deconnexion
+	msgsnd(id_file,&msgBufferSnd,sizeof(msgbuf)-sizeof(long),0);
+
+	fprintf(stderr,"@%d - Signal d'interruption reçu ",id);
+	exit(-1);
+
+}
+
+/*----------------ATTENDRE AVANT DE CONTINUER----------------------*/
 
 void PressEnterToContinue(void)
 { 
@@ -10,6 +84,7 @@ void PressEnterToContinue(void)
     }
 }
 
+/*----------------CONNEXION----------------------*/
 
 
 int login(int* adresse, int* id_file, int* id_client)
@@ -23,10 +98,10 @@ int login(int* adresse, int* id_file, int* id_client)
 
 	//Envoi du message demandant l'identification
 	msgsnd(*id_file,&loginMsg,sizeof(msgbuf)-sizeof(long),0); 
-	printf("NouveauClient - Envoi d'une requete typ_dem_num à @1(Serveur) %ld.\n",(long)loginMsg.mtype);
+	printf("NouveauClient - Envoi d'une requete [Connexion] à @1(Serveur) %ld.\n",(long)loginMsg.mtype);
 
 	//Attente de réception d'un id
-	msgrcv(*id_file,&msgBufferRcv,sizeof(msgbuf)-sizeof(long),*id_client,0);
+	msgrcv(*id_file,&msgBufferRcv,sizeof(msgbuf)-sizeof(long),ADR_COMMUNE,0);
 
 	//Définition de l'id envoyé par le serveur
 	*adresse = msgBufferRcv.id;
@@ -41,10 +116,22 @@ int login(int* adresse, int* id_file, int* id_client)
 	
 }
 
+/*----------------DECONNEXION----------------------*/
+
 void logout(){
 
 
 }
+
+
+/*****************************************************
+
+		DEBUT DU PROGRAMME
+
+******************************************************/
+
+
+
 
 int main(){
 	int id=ADR_COMMUNE; //Initialiser l'adresse du client à l'adresse de recetin commune
@@ -63,7 +150,7 @@ int main(){
 	}
 	
 	//Récupération de la file de messages
-	int id_file= msgget(cle,0); //Flag = 0 -> Si pas de file, notifier et quitter
+	id_file= msgget(cle,0); //Flag = 0 -> Si pas de file, notifier et quitter
 	if (id_file == -1)
 	{
 		perror("NouveauClient - Erreur création de file");
@@ -75,7 +162,13 @@ int main(){
 		}
 	else
 	{
+
 		printf("NouveauClient - Identification réussie, (ID : %d).\n\n",id);
+
+		//Traitement des signaux d'interruption
+		sigaction(SIGINT,&act,0);
+		sigaction(SIGQUIT,&act,0);
+		sigaction(SIGKILL,&act,0);
 	}
 	while (1)
 	{
@@ -134,7 +227,8 @@ int main(){
 			printf("***********************Stock de l'objet %d***********************\n",choix_menu);	
 			printf ("%d\n",msgBufferRcv.stock);		
 			printf("****************************************************************\n");
-
+			PressEnterToContinue();
+			system("clear");
 			break;
 		case 3 :
 			printf("****************************************************************\n");
@@ -157,7 +251,8 @@ int main(){
 			printf("***********************Prix de l'objet %d************************\n",choix_menu);	
 			printf ("%.2f euros.\n",msgBufferRcv.prix);		
 			printf("****************************************************************\n");
-
+			PressEnterToContinue();
+			system("clear");
 			break;
 		case 4 :
 			//Création d'un message pour demander la deconnexion

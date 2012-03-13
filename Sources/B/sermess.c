@@ -1,14 +1,74 @@
 #include "MsgDef.h"
 #include "iniobj.h"
+#include "signal.h"
 
 
 
-//Struct Fruit {
+/*****************************************************
 
-//Nom
-//Stock
-//Prix
-//}
+		PROTOTYPES
+
+******************************************************/
+
+//Routine d'interruption
+void handlerInteruption();
+
+
+
+//Traitement des requêtes
+int traitementDemandeConnexion(int* nbClientServis,int* nbClientActuels, msgbuf* msgBufferSnd);
+
+int traitementAffichageListeObjet(msgbuf msgBufferRcv,msgbuf* msgBufferSnd,fruit *table);
+
+int traitementDemandeStock(msgbuf msgBufferRcv,msgbuf* msgBufferSnd,fruit *table);
+
+int traitementDemandePrix(msgbuf msgBufferRcv,msgbuf* msgBufferSnd,fruit *table);
+
+int traitementDemandeDeconnexion(int* nbClientActuels,msgbuf msgBufferRcv, msgbuf* msgBufferSnd);
+
+
+
+/*****************************************************
+
+		DECLARATION DE VARIABLES
+
+******************************************************/
+
+
+
+/*----------------STRUCTURE SIGACTION----------------------*/
+
+
+struct sigaction act = {handlerInteruption,0,0,0};
+
+
+/*----------------FILE DE MESSAGES----------------------*/
+int id_file=-1;
+
+
+
+/*****************************************************
+
+		DECLARATION DE FONCTIONS
+
+******************************************************/
+
+
+
+/*----------------ROUTINE D'INTERRUPTION----------------------*/
+
+void handlerInteruption()
+{
+	//fermeture de la file des messages
+	while(!msgctl ( id_file, IPC_RMID,0)){}
+	perror("@1 (Serveur) - Signal d'interruption reçu ");
+	exit(-1);
+
+}
+
+
+
+/*----------------TRAITEMENT DE REQUETES----------------------*/
 
 
 int traitementDemandeConnexion(int* nbClientServis,int* nbClientActuels, msgbuf* msgBufferSnd){
@@ -81,12 +141,18 @@ int traitementDemandeDeconnexion(int* nbClientActuels,msgbuf msgBufferRcv, msgbu
 		return 0;
 }
 
-//Dans client faire un menu pour faire les requetes sur les objets
-//ipcsrm -q id (-q pour queue)
 
-// 1 - Nouveau Client
-// 2 - Requete
-// 3 - Deconnexion 
+
+
+/*****************************************************
+
+		DEBUT DU PROGRAMME
+
+******************************************************/
+
+
+
+/*----------------STRUCTURE SIGACTION----------------------*/
 
 
 int main(){
@@ -100,10 +166,10 @@ int main(){
 	msgbuf msgBufferRcv;
 	msgbuf msgBufferSnd;
 	fruit *table = init_obj();//initialisation de la table
-    if (fruit == NULL)
+
+	if(!table)
 	{
 		printf("@1 (Serveur) - Erreur initialisation table d'objets.");
-		return -1;
 	}
 
 	//Début de la fonction 
@@ -119,14 +185,21 @@ int main(){
 	}
 
 	//Création de la file de messages
-	int id_file= msgget(cle,IPC_CREAT|IPC_EXCL|0666);
+	id_file= msgget(cle,IPC_CREAT|IPC_EXCL|0666);
 	if (id_file == -1)
 	{
 		perror("@1 (Serveur) - Erreur creation de file");
 		return -1;
 	}
 
+	//Traitement des signaux d'interruption
+	sigaction(SIGINT,&act,0);
+	sigaction(SIGQUIT,&act,0);
+	sigaction(SIGKILL,&act,0);
 	
+	
+
+
 
 	//Tant que l'on a pas traité le nombre de client à traiter ou qu'il reste des clients connectés
 	while((nbClientServis<NB_MAX_CLT) || (nbClientActuels > 0)){

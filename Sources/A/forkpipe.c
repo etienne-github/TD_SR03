@@ -125,7 +125,7 @@ int writer(){ //Encapsuler et envoyer des lignes de fichier txt ˆ travers le pip
                 //variable temporaire
             char * encMsg=(char*)malloc(107*sizeof(char));
             if(encMsg==NULL){
-                fprintf(stderr,"FILS1 >> Erreur Allocation mŽmoire.\n");
+                fprintf(stderr,"FILS1 >> Erreur Allocation memoire.\n");
                 return -1;
             }
                 //Encapsulation
