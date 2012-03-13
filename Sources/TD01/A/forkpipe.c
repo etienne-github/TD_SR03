@@ -45,10 +45,8 @@
 
 
 //A definir si l'on souhaite afficher stdout et stderr sur deux terminaux différents (Terminaux à ouvrir manuellement)
-#define SEPARATE_STDERR
-#ifdef SEPARATE_STDERR
-//char terminalStderr[]={};
-#endif
+//define SEPARATE_STDERR
+
 
 /*-------------------------------------------------------
                     DECLARATIONS DE TYPES
@@ -93,12 +91,19 @@ int writer(){ //Encapsuler et envoyer des lignes de fichier txt à travers le pip
     //Ouvrir le fichier 
     FILE* inputFile;
     inputFile = fopen("./input.txt","r");
+    if(inputFile==NULL){
+        fprintf(stderr,"FILS1 >> Erreur ouverture fichier.\n");
+        return -1;
+    }
     
     //Variables utiles à la lecture du fichier
     char *buffer=(char *)malloc(100*sizeof(char));
+    if(buffer==NULL){
+        fprintf(stderr,"FILS1 >> Erreur Allocation mémoire.\n");
+        return -1;
+    }
     char tempChar;
     int length;
-    char bidon;
     
     
     //Initialisation de la lecture
@@ -119,6 +124,10 @@ int writer(){ //Encapsuler et envoyer des lignes de fichier txt à travers le pip
             //Encapsulation du buffer
                 //variable temporaire
             char * encMsg=(char*)malloc(107*sizeof(char));
+            if(encMsg==NULL){
+                fprintf(stderr,"FILS1 >> Erreur Allocation memoire.\n");
+                return -1;
+            }
                 //Encapsulation
             encMsg = Encapsulation((char*)buffer,length,(char*)encMsg);
             
@@ -141,7 +150,12 @@ int writer(){ //Encapsuler et envoyer des lignes de fichier txt à travers le pip
     }
     
     //Fermeture du fichier
-    fclose(inputFile);
+    int cl = fclose(inputFile);
+    
+    if(cl==EOF){
+        fprintf(stderr,"FILS1 >> Erreur fermeture fichier.\n");
+        return -1;
+    }
     
     return 0;
 }
@@ -170,12 +184,14 @@ char* Encapsulation(char* String,int nbDeChar,char* dest){  //Message_de_longueu
         //Sinon convertir son nombre de caractères en chaine
         char tempNb[5];
         
-    #ifdef __APPLE__
-        sprintf(tempNb,"%d",nbDeChar);
-    #else
-	sprintf(tempNb,"%d",nbDeChar);
-        //itoa(nbDeChar,tempNb,10);
-    #endif
+
+        int sp = sprintf(tempNb,"%d",nbDeChar);
+        if(sp<0){
+
+            return NULL; //retourne un ptd null.
+            
+        }
+
         
 
         //Ajouter ce nombre de caractère à la suite de la trame suivant le format 000

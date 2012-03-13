@@ -2,4 +2,6 @@
 				   TD SR03
 ***************************************************************************
 
-- TD01 : fork, pipe, file de messages (En cours).
+- TD01 : fork, pipe, file de messages.
+- TD02 : socket TCP, mecanismes client/serveur,  serveur concourant (En cours..)
+

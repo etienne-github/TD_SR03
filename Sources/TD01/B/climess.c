@@ -1,5 +1,90 @@
 #include "MsgDef.h"
+#include "signal.h"
 
+
+/*****************************************************
+
+		PROTOTYPES
+
+******************************************************/
+
+
+//Routine d'interruption
+void handlerInteruption();
+
+//Attendre entrée pour continuer
+void PressEnterToContinue(void);
+
+//Connexion
+int login(int* adresse, int* id_file, int* id_client);
+
+//Deconnexion
+void logout();
+
+
+/*****************************************************
+
+		DECLARATION DE VARIABLES
+
+******************************************************/
+
+
+
+/*----------------STRUCTURE SIGACTION----------------------*/
+
+
+struct sigaction act = {handlerInteruption,0,0,0};
+
+
+/*----------------IDENTIFIANT CLIENT----------------------*/
+
+int id=0;
+
+/*----------------FILE DE MESSAGES----------------------*/
+int id_file=-1;
+
+
+/*****************************************************
+
+		DECLARATION DE FONCTIONS
+
+******************************************************/
+
+
+
+/*----------------ROUTINE D'INTERRUPTION----------------------*/
+
+void handlerInteruption()
+{
+	msgbuf msgBufferSnd;
+
+	//Deconnexion
+	//Création d'un message pour demander la deconnexion
+	msgBufferSnd.mtype = 1; //ADRESSE SERVEUR
+	msgBufferSnd.qType = typ_dem_deco;
+	msgBufferSnd.id = id;
+
+	//Envoi du message demandant la deconnexion
+	msgsnd(id_file,&msgBufferSnd,sizeof(msgbuf)-sizeof(long),0);
+
+	fprintf(stderr,"@%d - Signal d'interruption reçu ",id);
+	exit(-1);
+
+}
+
+/*----------------ATTENDRE AVANT DE CONTINUER----------------------*/
+
+void PressEnterToContinue(void)
+{ 
+	char* C=(char*)malloc(100*sizeof(char));
+    if(C!=NULL)
+    {
+        printf("Entrez n'importe quel caractère pour continuer....\n");
+        scanf("%s",C);
+    }
+}
+
+/*----------------CONNEXION----------------------*/
 
 
 int login(int* adresse, int* id_file, int* id_client)
@@ -13,10 +98,10 @@ int login(int* adresse, int* id_file, int* id_client)
 
 	//Envoi du message demandant l'identification
 	msgsnd(*id_file,&loginMsg,sizeof(msgbuf)-sizeof(long),0); 
-	printf("NouveauClient - Envoi d'une requete typ_dem_num à @1(Serveur) %ld\n",(long)loginMsg.mtype);
+	printf("NouveauClient - Envoi d'une requete [Connexion] à @1(Serveur) %ld.\n",(long)loginMsg.mtype);
 
 	//Attente de réception d'un id
-	msgrcv(*id_file,&msgBufferRcv,sizeof(msgbuf)-sizeof(long),*id_client,0);
+	msgrcv(*id_file,&msgBufferRcv,sizeof(msgbuf)-sizeof(long),ADR_COMMUNE,0);
 
 	//Définition de l'id envoyé par le serveur
 	*adresse = msgBufferRcv.id;
@@ -31,13 +116,25 @@ int login(int* adresse, int* id_file, int* id_client)
 	
 }
 
+/*----------------DECONNEXION----------------------*/
+
 void logout(){
 
 
 }
 
+
+/*****************************************************
+
+		DEBUT DU PROGRAMME
+
+******************************************************/
+
+
+
+
 int main(){
-	int id=NB_MAX_CLT + 2;
+	int id=ADR_COMMUNE; //Initialiser l'adresse du client à l'adresse de recetin commune
 	int i;
 	int choix_menu;
 	msgbuf msgBufferRcv;
@@ -45,30 +142,38 @@ int main(){
 
 	//Création d'une clé
 	key_t cle;
-	cle= ftok("./SR03P0xxx",0);
+	cle= ftok("./mon_login_sr03",0);
 	if (cle == -1)
 	{
-		perror("Erreur création clé");
+		perror("NouveauClient - Erreur création clé");
 		return -1;
 	}
 	
 	//Récupération de la file de messages
-	int id_file= msgget(cle,0); //Flag = 0 -> Si pas de file, notifier et quitter
+	id_file= msgget(cle,0); //Flag = 0 -> Si pas de file, notifier et quitter
 	if (id_file == -1)
 	{
-		perror("NouveauClient - Erreur creation de file\n");
+		perror("NouveauClient - Erreur création de file");
 		return -1;
 	}
 	if(login(&id,&id_file,&id)!=0){
-		printf("Connexion refusée\n");
+		printf("NouveauClient - Connexion refusée.\n");
 		return 0;
 		}
 	else
 	{
-		printf("@%d (ex NouveauClient) - Identification réussie\n",id);
+
+		printf("NouveauClient - Identification réussie, (ID : %d).\n\n",id);
+
+		//Traitement des signaux d'interruption
+		sigaction(SIGINT,&act,0);
+		sigaction(SIGQUIT,&act,0);
+		sigaction(SIGKILL,&act,0);
 	}
 	while (1)
 	{
+		printf("****************************************************************\n");
+		printf("		            	MENU PRINCIPAL                          \n");
 		printf("****************************************************************\n");
 		printf("1 - Afficher la liste des objets disponibles\n");
 		printf("2 - Afficher le stock d'un type d'objet\n");
@@ -76,7 +181,7 @@ int main(){
 		printf("4 - Se déconnecter\n");
 		printf("****************************************************************\n");
 		scanf("%d",&choix_menu);
-	
+		system("clear");
 		switch (choix_menu){
 	
 		case 1 :
@@ -89,7 +194,7 @@ int main(){
 			msgsnd(id_file,&msgBufferSnd,sizeof(msgbuf)-sizeof(long),0);
 			
 			//Attente d'une réponse
-			printf("Attente d'une réponse, mon id est %d \n",id);
+			printf("@%d - Attente d'une réponse. \n\n",id);
 			msgrcv(id_file,&msgBufferRcv,sizeof(msgbuf)-sizeof(long),id,0);
 			printf("***********************Liste des objets ************************\n");	
 			for (i=0; i < NB_MAX_TYP_OBJ; i++)
@@ -97,13 +202,16 @@ int main(){
 				printf ("%d - %s \n",i+1,msgBufferRcv.nom[i]);
 			}		
 			printf("****************************************************************\n");
+			PressEnterToContinue();
+			system("clear");
 			break;
 			
 		case 2 :
 			printf("****************************************************************\n");
-			printf("Entrez le numéro de l'objet dont vous souhaitez consulter le stock\n");
+			printf("Entrez le numéro de l'objet dont vous souhaitez consulter le stock:\n");
 			printf("****************************************************************\n");
 			scanf("%d",&choix_menu);
+			system("clear");
 			//Création d'un message pour demander le stock d'un type d'objet
 			msgBufferSnd.mtype = 1; //ADRESSE SERVEUR
 			msgBufferSnd.qType = typ_dem_obj_stock;
@@ -114,17 +222,20 @@ int main(){
 			msgsnd(id_file,&msgBufferSnd,sizeof(msgbuf)-sizeof(long),0);
 			
 			//Attente d'une réponse
-			printf("Attente d'une réponse, mon id est %d \n",id);
+			printf("@%d - Attente d'une réponse..\n\n",id);
 			msgrcv(id_file,&msgBufferRcv,sizeof(msgbuf)-sizeof(long),id,0);
-			printf("***********************Stock de l'objet %d************************\n",choix_menu);	
+			printf("***********************Stock de l'objet %d***********************\n",choix_menu);	
 			printf ("%d\n",msgBufferRcv.stock);		
 			printf("****************************************************************\n");
+			PressEnterToContinue();
+			system("clear");
 			break;
 		case 3 :
 			printf("****************************************************************\n");
-			printf("Entrez le numéro de l'objet dont vous souhaitez consulter le prix\n");
+			printf("Entrez le numéro de l'objet dont vous souhaitez consulter le prix:\n");
 			printf("****************************************************************\n");
 			scanf("%d",&choix_menu);
+			system("clear");
 			//Création d'un message pour demander le prix d'un type d'objet
 			msgBufferSnd.mtype = 1; //ADRESSE SERVEUR
 			msgBufferSnd.qType = typ_dem_obj_prix;
@@ -135,11 +246,13 @@ int main(){
 			msgsnd(id_file,&msgBufferSnd,sizeof(msgbuf)-sizeof(long),0);
 			
 			//Attente d'une réponse
-			printf("Attente d'une réponse, mon id est %d \n",id);
+			printf("@%d - Attente d'une réponse.. \n\n",id);
 			msgrcv(id_file,&msgBufferRcv,sizeof(msgbuf)-sizeof(long),id,0);
 			printf("***********************Prix de l'objet %d************************\n",choix_menu);	
-			printf ("%f euros\n",msgBufferRcv.prix);		
+			printf ("%.2f euros.\n",msgBufferRcv.prix);		
 			printf("****************************************************************\n");
+			PressEnterToContinue();
+			system("clear");
 			break;
 		case 4 :
 			//Création d'un message pour demander la deconnexion
@@ -151,7 +264,7 @@ int main(){
 			msgsnd(id_file,&msgBufferSnd,sizeof(msgbuf)-sizeof(long),0);
 			
 			//Attente d'une réponse
-			printf("Attente d'une réponse, mon id est %d \n",id);
+			printf("@%d - Attente d'une réponse.. \n",id);
 			msgrcv(id_file,&msgBufferRcv,sizeof(msgbuf)-sizeof(long),id,0);
 			if (msgBufferRcv.qType == typ_info_deco)
 			{
@@ -168,3 +281,4 @@ int main(){
 	return 0;
 
 }
+
