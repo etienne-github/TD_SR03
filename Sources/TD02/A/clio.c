@@ -124,8 +124,8 @@ for(i;i<tablen;i++){
 
 
 
-
 close(ClntSocket);
+
 printf("Client - Fermeture.\n\n");
 exit(0);
 

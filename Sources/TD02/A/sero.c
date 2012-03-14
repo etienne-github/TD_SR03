@@ -172,6 +172,8 @@ int main(int argc, char* argv[]){
 		}
 	}	
 printf("Serveur - %d clients traites, fermeture.\n\n",MAX_CLIENTS_A_TRAITER);
+close(ClntSocket);
+close(ServSocket);
 return 0;
 
 }
