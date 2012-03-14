@@ -24,6 +24,13 @@
 
 int main(int argc, char* argv[]){
 
+	//Verification de la syntaxe d'appel
+	if(argc < 3)
+	{
+		fprintf(stderr,"Usage : %s <host name> <port number>\n",argv[0]);
+		exit(-1);
+	}
+
 	obj * tableObj = initTable();
 
 	if (!tableObj){
@@ -49,7 +56,7 @@ int main(int argc, char* argv[]){
 	//Traitement des erreur
 	if (ClntSocket < 0){
 
-		perror("Serveur : Erreur pendant la creation de la Socket");
+		perror("Client : Erreur pendant la creation de la Socket");
 		exit(-1);
 	}
 
@@ -68,7 +75,7 @@ int main(int argc, char* argv[]){
 	if(bind(ClntSocket,(struct sockaddr *) &echoClntAddr,sizeof(echoClntAddr)) < 0)  // ou alors juste faire un scocket() et un connect(ClntSocket,&echoClntAddr,0,sizeof(echoClntAddr)) qui va initialiser la structure adresse echoClntAddr tout seul 
 	{
 
-		perror("Client - Erreur lors de la connexion de la socket");
+		perror("Client : Erreur lors de la liason de la socket");
 		exit(-1);
 	}
 
@@ -88,7 +95,39 @@ int main(int argc, char* argv[]){
 
 
 //CONNECTION A LA SOCKET SERVEUR
-connect(ClntSocket,(struct sockaddr *) &echoServAddr,sizeof(echoServAddr));
+if (connect(ClntSocket,(struct sockaddr *) &echoServAddr,sizeof(echoServAddr)) < 0){
+
+		perror("Client : Erreur lors de la connexion de la socket au serveur");
+		exit(-1);
+
+}
+
+printf("Client - Socket connectee au serveur avec succes.\n");
+
+int i=0;
+for(i;i<tablen;i++){
+
+	if(send(ClntSocket,&tableObj[0],sizeof(obj),0) != sizeof(obj)){
+
+		printf("Client : Erreur lors de l'envoi de l'objet %d",i);
+		perror("");
+		exit(-1);
+
+	} else {
+
+		printf("Client - Objet %d envoye avec succes.\n",i);
+	}
+
+
+}
+
+
+
+
+
+close(ClntSocket);
+printf("Client - Fermeture.\n\n");
+exit(0);
 
 /*
 initialise le socket TCP

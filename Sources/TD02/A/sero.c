@@ -3,6 +3,7 @@
 #include <arpa/inet.h>
 #include <unistd.h>
 #include <string.h>
+#include <sys/wait.h> //pour waitpid
 
 
 #include "defobj.h"
@@ -11,6 +12,8 @@
 #include <sys/socket.h>
 
 
+const int MAX_CLIENTS_A_TRAITER=3;
+
 
 void traiterClient(int ClntSocket){
 
@@ -18,28 +21,34 @@ void traiterClient(int ClntSocket){
 	int iqtFound=0;
 	obj objBuffer;
 	int receivedDataSize;
-	if(receivedDataSize=recv(ClntSocket,objBuffer,sizeof(obj),0) < 0)
+	printf("Serveur - En attente de reception de donnees...\n");
+	if((receivedDataSize=recv(ClntSocket,&objBuffer,sizeof(obj),0)) < 0)
 	{
-		perror("Server - Erreur reception de message");
-		exit(-1);
+		perror("Serveur : Erreur pendant la reception des donnees");
+		exit(1);
 	} else 
 	{
 		while(receivedDataSize > 0){
 
-			//Afficher message		
-			//Regarder si -1;
-			//refaire un received comme dans le poly ?
+			printf("Objet recu :\n");
+			printf("	%s\n",objBuffer.section1);
+			printf("	%s\n",objBuffer.section2);
+			printf("	%d\n",objBuffer.ii);
+			printf("	%d\n",objBuffer.jj);
+			printf("	%f\n\n",objBuffer.dd);
+			
+			receivedDataSize=recv(ClntSocket,&objBuffer,sizeof(obj),0);
 			
 		}
 	}
 
 
-	if()
+	
 }
 /*boucle : lire data client sur socket
 		jusqu'à objet contenant "fin"*/
 
-}
+
 
 
 
@@ -48,6 +57,7 @@ int main(int argc, char* argv[]){
 	pid_t pid;
 	int ServSocket;
 	int ClntSocket;
+	int nbClientsTraites = 0;
 	struct sockaddr_in echoServAddr; /*Adresse locale*/ //NB in = internet pas in/out
 	struct sockaddr_in echoClntAddr; /*Adresse client*/
 	int clntLen; /*Taille de la strucutre de donnees adresse client*/
@@ -64,6 +74,7 @@ int main(int argc, char* argv[]){
 	
 	//Récuperation du numero de port
 	portNumber=atoi(argv[1]);
+	
 
 	//creation de la socket
 	ServSocket = socket(PF_INET,SOCK_STREAM,IPPROTO_TCP);
@@ -109,17 +120,19 @@ int main(int argc, char* argv[]){
 		exit(-1);
 	}
 
-	while(1){ //Boucle infinie
+	while(nbClientsTraites < MAX_CLIENTS_A_TRAITER){ //Boucle infinie
 
 	/*Definir la taille du parametre d'entree-sortie*/
 		clntLen = sizeof(echoClntAddr);
 
-		if(ClntSocket=accept(ServSocket,(struct sockaddr *) &echoClntAddr,&clntLen) < 0){ //accept est bloquant
+		printf("Serveur - En attente de connection client...\n");
+		if((ClntSocket=accept(ServSocket,(struct sockaddr *) &echoClntAddr,&clntLen)) < 0){ //accept est bloquant
 
 		perror("Serveur : Erreur pendant l'acceptation d'un client");
 		exit(-1);
 
 		}
+		printf("Serveur - Client connecte : %d.\n",ClntSocket);
 
 
 		//Traitement du client
@@ -127,25 +140,38 @@ int main(int argc, char* argv[]){
 
 		if(pid < 0) /*erreur*/
 		{
-			perror("Serveur - Erreur creation du processus fils");
+			perror("Serveur : Erreur creation du processus fils");
 			exit(-1);
 
 		}else if(pid == 0) /*fils*/
 		{
-		
-		traiterClient();
- 		/*
-		traiterclient()
+			printf("Serveur - Traitement (%d) de la requete en cours..\n",pid);
+			traiterClient(ClntSocket);
+ 			exit(0);
 		
 
 		}else /*pere*/
 		{
-		/*
-		waitpid() attends fin du fils
-		si statut fin fils = arrêt : fin serveur au bout de trois clients*/
+			int status;
+			
+			waitpid(pid,&status,WUNTRACED); 
+			 if (WIFEXITED(status))
+                {
+            
+                    fprintf(stderr,"Serveur - Le traitement (%d) termine avec le statut %d.\n",pid, WEXITSTATUS(status));
+                    nbClientsTraites++;
+                    fflush(stderr);
+            
+                    //Sinon indiqué qu'il ne s'est pas terminé correctement.    
+                } else {
+            
+                    fprintf(stderr,"Serveur - Le traitement (%d) ne s'est pas termine correctement.\n",pid);
+                    fflush(stderr);
+            
+                }
 		}
 	}	
-
+printf("Serveur - %d clients traites, fermeture.\n\n",MAX_CLIENTS_A_TRAITER);
 return 0;
 
 }
