@@ -32,22 +32,28 @@ void handlerTerminaison(int sig){
 
 	int status;
 			
-			waitpid(-1,&status,WNOHANG); 
+			int ret=waitpid(-1,&status,WNOHANG); 
+			
+			while(ret>0)
+			{
+			
+			printf("ret : %d\n",ret);
 			 if (WIFEXITED(status))
                 {
             
-                    fprintf(stderr,"Serveur - Un traitement vient de se terminer avec le statut %d.\n", WEXITSTATUS(status));
-                    nbClientsTraites++;
-                    nbClientsConnectes--; 
-                    fflush(stderr);
+                    fprintf(stderr,"Serveur - Un traitement (%d) vient de se terminer avec le statut %d.\n",ret,WEXITSTATUS(status));
+  					fflush(stderr);
+  					nbClientsConnectes--; 
             
                     //Sinon indiqué qu'il ne s'est pas terminé correctement.    
                 } else {
             
-                    fprintf(stderr,"Serveur - Un traitement vint de se terminer de facon inatendue avec le status.\n", WEXITSTATUS(status));
+                    fprintf(stderr,"Serveur - Un traitement (%d) vint de se terminer de facon inatendue avec le status.\n",ret, WEXITSTATUS(status));
                     fflush(stderr);
             
                 }
+                ret=waitpid(-1,&status,WNOHANG); 
+            }
 
 
 }
@@ -66,7 +72,11 @@ void traiterClient(int ClntSocket){
 	obj objBuffer;
 	int receivedDataSize;
 	printf("Serveur - En attente de reception de donnees...\n");
+
+
 	sleep(2);
+
+              
 	if((receivedDataSize=recv(ClntSocket,&objBuffer,sizeof(obj),0)) < 0)
 	{
 		perror("Serveur : Erreur pendant la reception des donnees");
@@ -173,31 +183,45 @@ int main(int argc, char* argv[]){
 		exit(-1);
 	}
 
-	while(nbClientsTraites < MAX_CLIENTS_A_TRAITER){ //Boucle infinie
+	while((nbClientsTraites < MAX_CLIENTS_A_TRAITER)||(nbClientsConnectes > 0)){ //Boucle infinie
 
 	/*Definir la taille du parametre d'entree-sortie*/
 		clntLen = sizeof(echoClntAddr);
 
-		printf("Serveur - En attente de connection client...\n");
+		
 		
 		//bloquer SIGCHILD
-		sigaddset(&set, SIGCHLD);
-    	sigprocmask(SIG_BLOCK, &set, &oset);
-		
-		if((ClntSocket=accept(ServSocket,(struct sockaddr *) &echoClntAddr,&clntLen)) < 0){ //accept est bloquant
 
-		perror("Serveur : Erreur pendant l'acceptation d'un client");
-		exit(-1);
+		
+		
+		if(nbClientsTraites < MAX_CLIENTS_A_TRAITER){
+		
+			sigaddset(&set, SIGCHLD);
+    		sigprocmask(SIG_BLOCK, &set, &oset);
+    		printf("Serveur - En attente de connection client...\n");
+			
+			if((ClntSocket=accept(ServSocket,(struct sockaddr *) &echoClntAddr,&clntLen)) < 0){ //accept est bloquant
+			
 
-		}
+
+			perror("Serveur : Erreur pendant l'acceptation d'un client");
+			exit(-1);
+
+			}
+			
+			sigprocmask(SIG_SETMASK, &oset, NULL);	
+			sigaction(SIGCHLD,&act,0);
+			sigdelset(&oset, SIGCHLD);
+			nbClientsConnectes++;
+
 		
-		//debloquer SIGCHLD
-		sigdelset(&oset, SIGCHLD);
-    	sigprocmask(SIG_SETMASK, &oset, NULL);
 		
 		
-		printf("Serveur - Client connecte : %d.\n",ClntSocket);
-		nbClientsConnectes++;
+		
+		
+		
+		
+		
 
 		//Traitement du client
 		pid=fork();
@@ -209,19 +233,25 @@ int main(int argc, char* argv[]){
 
 		}else if(pid == 0) /*fils*/
 		{
-			printf("Serveur - Traitement (%d) de la requete en cours..\n",pid);
+			printf("Serveur - Traitement (%d) de la requete en cours..\n",getpid());
 			traiterClient(ClntSocket);
  			exit(0);
-		
-
 		}else /*pere*/
 		{
+		
+			printf("HELLOWORLD\n");
+			nbClientsTraites++;
+		
+
 			
-			sigaction(SIGCHLD,&act,0);
+
 			
 			
 		}
+	}
 	}	
+	
+handlerTerminaison(0);	
 printf("Serveur - %d clients traites, fermeture.\n\n",MAX_CLIENTS_A_TRAITER);
 close(ClntSocket);
 close(ServSocket);
