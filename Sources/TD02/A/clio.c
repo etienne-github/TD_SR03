@@ -107,7 +107,7 @@ printf("Client - Socket connectee au serveur avec succes.\n");
 int i=0;
 for(i;i<tablen;i++){
 
-	if(send(ClntSocket,&tableObj[0],sizeof(obj),0) != sizeof(obj)){
+	if(send(ClntSocket,&tableObj[i],sizeof(obj),0) != sizeof(obj)){
 
 		printf("Client : Erreur lors de l'envoi de l'objet %d",i);
 		perror("");
